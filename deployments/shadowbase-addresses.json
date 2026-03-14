@@ -28,14 +28,14 @@
             "RAILGUN": "0xecfcf3b4ec647c4ca6d49108b311b7a7c9543fea"
         },
         "pingPong": {
-            "PingPongL1": "0xD2677Ae186C45fFbEfD39E58CB461E90BA6787aA",
-            "deployTx": "0x8e646683987575f87237362d0ee8b5f9e91ff9f2355ed2728b3d57f9733e03ce",
-            "deployBlock": 10437989
+            "PingPongL1": "0x0eE5E0051111dA8e09f312C066f6011Bb1DE8dC9",
+            "deployTx": "0x44c0f0621679f21a3ed82773bd545a2c59ed4429098e53c20b8c7acda8cadad2",
+            "deployBlock": 10445433
         },
         "l1Companion": {
-            "L1Companion": "0xC4e2b9f884BF8D06c42f4B8B6f2ce2678Aa8B43e",
-            "deployTx": "0xb67cbbeb731655ad38924538bcb6ed72cdb4509cd6d27becadc2739c1edece35",
-            "deployBlock": 10438181,
+            "L1Companion": "0x08D1FA2224aA26Cf7bDe930c2d940d092821a1F8",
+            "deployTx": "0x4f02f728106f820b473425b264566910728b085eed82e5b789e55af274c8c0f5",
+            "deployBlock": 10445448,
             "RAILGUN": "0xeCFCf3b4eC647c4Ca6D49108b311b7a7C9543fea",
             "Messenger": "0x579AAF4e08B072B3b53148A260913837518A0AB8",
             "WETH": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"

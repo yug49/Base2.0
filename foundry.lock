@@ -10,5 +10,14 @@
       "name": "v4.9.6",
       "rev": "2d081f24cac1a867f6f73d512f2022e1fa987854"
     }
+  },
+  "node": {
+    "rev": "f14551c15cb846eddb77cb9503dc630b785075d1"
+  },
+  "op-geth": {
+    "rev": "9aae694c0ae6a01c5011e81105e8a707fed67dae"
+  },
+  "optimism": {
+    "rev": "1855aec6cb3e543a08e296bd3076491b9be32e6d"
   }
 }
