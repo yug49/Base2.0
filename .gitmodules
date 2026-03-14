@@ -13,3 +13,9 @@
 [submodule "optimism"]
 	path = optimism
 	url = https://github.com/yug49/optimism.git
+[submodule "contract"]
+	path = contract
+	url = https://github.com/Railgun-Privacy/contract.git
+[submodule "circuits-v2"]
+	path = circuits-v2
+	url = https://github.com/Railgun-Privacy/circuits-v2.git
