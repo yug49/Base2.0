@@ -1,0 +1,141 @@
+# ================================================================
+# SHADOWBASE DEVNET — Docker Compose
+# ================================================================
+# Runs op-geth (execution) + op-node (consensus) as a local L2 devnet
+# settling to Ethereum Sepolia as L1.
+#
+# Prerequisites:
+#   1. Build op-geth from ../op-geth (produces geth binary)
+#   2. Build op-node from ../optimism/op-node (produces op-node binary)
+#   3. Deploy L1 contracts to Sepolia (produces addresses)
+#   4. Generate genesis.json and rollup.json via op-chain-ops
+#   5. Set your Sepolia RPC URL in .env.op-node
+#   6. Generate JWT secret: openssl rand -hex 32 > jwt-secret.txt
+# ================================================================
+
+services:
+  op-geth:
+    build:
+      context: ../op-geth
+      dockerfile: Dockerfile
+    container_name: shadowbase-op-geth
+    restart: unless-stopped
+    ports:
+      - "8545:8545"   # HTTP RPC (wallet/frontend connects here)
+      - "8546:8546"   # WebSocket RPC
+      - "8551:8551"   # Engine API (op-node connects here)
+      - "30303:30303" # P2P (disabled in devnet, but exposed)
+    volumes:
+      - ./data/geth:/data
+      - ./genesis.json:/genesis.json:ro
+      - ./jwt-secret.txt:/jwt-secret.txt:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        # Initialize genesis if not already done
+        if [ ! -d /data/geth/chaindata ]; then
+          geth init --datadir /data /genesis.json
+        fi
+        # Run op-geth
+        geth \
+          --datadir /data \
+          --networkid 845311 \
+          --http \
+          --http.addr 0.0.0.0 \
+          --http.port 8545 \
+          --http.api web3,debug,eth,txpool,net,engine \
+          --http.corsdomain "*" \
+          --http.vhosts "*" \
+          --ws \
+          --ws.addr 0.0.0.0 \
+          --ws.port 8546 \
+          --ws.api debug,eth,txpool,net,engine \
+          --ws.origins "*" \
+          --authrpc.addr 0.0.0.0 \
+          --authrpc.port 8551 \
+          --authrpc.jwtsecret /jwt-secret.txt \
+          --authrpc.vhosts "*" \
+          --nodiscover \
+          --maxpeers 0 \
+          --syncmode full \
+          --gcmode archive \
+          --cache 512 \
+          --rollup.sequencerhttp "http://localhost:8545" \
+          --verbosity 3
+
+  op-node:
+    build:
+      context: ../optimism
+      dockerfile: ops/docker/op-stack-go/Dockerfile
+      target: op-node-target
+    container_name: shadowbase-op-node
+    restart: unless-stopped
+    depends_on:
+      - op-geth
+    ports:
+      - "9545:9545"   # op-node RPC
+      - "7300:7300"   # Metrics
+    volumes:
+      - ./rollup.json:/rollup.json:ro
+      - ./jwt-secret.txt:/jwt-secret.txt:ro
+    env_file:
+      - .env.op-node
+    command:
+      - op-node
+      - --l1=${OP_NODE_L1_ETH_RPC}
+      - --l2=ws://op-geth:8551
+      - --l2.jwt-secret=/jwt-secret.txt
+      - --rollup.config=/rollup.json
+      - --sequencer.enabled
+      - --sequencer.l1-confs=0
+      - --verifier.l1-confs=0
+      - --p2p.disable
+      - --rpc.addr=0.0.0.0
+      - --rpc.port=9545
+      - --log.level=info
+      - --metrics.enabled
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=7300
+
+  op-batcher:
+    build:
+      context: ../optimism
+      dockerfile: ops/docker/op-stack-go/Dockerfile
+      target: op-batcher-target
+    container_name: shadowbase-op-batcher
+    restart: unless-stopped
+    depends_on:
+      - op-node
+      - op-geth
+    command:
+      - op-batcher
+      - --l1-eth-rpc=${OP_NODE_L1_ETH_RPC}
+      - --l2-eth-rpc=http://op-geth:8545
+      - --rollup-rpc=http://op-node:9545
+      - --max-channel-duration=1
+      - --sub-safety-margin=4
+      - --poll-interval=1s
+      - --num-confirmations=1
+      - --private-key=${BATCHER_PRIVATE_KEY}
+    env_file:
+      - .env.op-node
+
+  op-proposer:
+    build:
+      context: ../optimism
+      dockerfile: ops/docker/op-stack-go/Dockerfile
+      target: op-proposer-target
+    container_name: shadowbase-op-proposer
+    restart: unless-stopped
+    depends_on:
+      - op-node
+      - op-geth
+    command:
+      - op-proposer
+      - --l1-eth-rpc=${OP_NODE_L1_ETH_RPC}
+      - --rollup-rpc=http://op-node:9545
+      - --poll-interval=12s
+      - --num-confirmations=1
+      - --private-key=${PROPOSER_PRIVATE_KEY}
+    env_file:
+      - .env.op-node
